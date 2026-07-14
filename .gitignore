@@ -1,0 +1,5 @@
+# Files we don't want in our git repo
+files/
+GLOSSARY.md
+DECISIONS_LOG.md
+.opencode/
