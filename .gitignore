@@ -1,7 +1,19 @@
-# Files we don't want in our git repo
-files/
-GLOSSARY.md
-DECISIONS_LOG.md
+# secrets
+.env
+*.pem
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# local lake + spark artefacts
+lake/
+spark-warehouse/
+metastore_db/
+derby.log
+checkpoints/
+# logs / editor
+*.log
 .opencode/
-.env
-.env
+.vscode/

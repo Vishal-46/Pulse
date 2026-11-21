@@ -1,59 +1,60 @@
-version: '3.8'
+# Pulse 2.0 local platform.
+# Images are pinned to exact versions: ":latest" makes builds unreproducible (a v1 lesson).
+# Start:  docker compose up -d --wait     (or: make up)
+
+name: pulse
 
 services:
   redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:latest
-    container_name: redpanda
+    image: redpandadata/redpanda:v26.2.7
+    container_name: pulse-redpanda
     command:
       - redpanda start
-      - --overprovisioned
+      - --mode dev-container          # single node, relaxed fsync: dev only, never production
       - --smp 1
       - --memory 1G
-      - --reserve-memory 0M
+      # Two listeners: containers reach "redpanda:9092", your laptop reaches "localhost:19092".
       - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
       - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+      # A typo'd topic name must ERROR, not silently create a 1-partition topic.
+      - --set redpanda.auto_create_topics_enabled=false
     ports:
-      - "19092:19092"
-
-  minio:
-    image: minio/minio:latest
-    container_name: minio
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-
-  postgres:
-    image: postgres:15
-    container_name: postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: airflow
-    ports:
-      - "5433:5432"
+      - "19092:19092"   # Kafka API (host)
+      - "19644:9644"    # Admin API / metrics
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-  airflow:
-    image: apache/airflow:2.10.4
-    container_name: airflow
+  console:
+    image: redpandadata/console:v3.14.0
+    container_name: pulse-console
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    ports:
+      - "8081:8080"     # Web UI: browse topics, partitions, consumer groups, offsets
     depends_on:
-      - postgres
+      redpanda:
+        condition: service_healthy
+
+  objectstore:
+    # S3-compatible object storage. MinIO stopped publishing public images in 2025,
+    # so we use RustFS (Apache-2.0, MinIO-compatible). Code only speaks the S3 API.
+    image: rustfs/rustfs:1.0.6
+    container_name: pulse-objectstore
     environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/airflow
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY}
-    volumes:
-      - ./dags:/opt/airflow/dags
+      RUSTFS_ACCESS_KEY: ${PULSE_S3_ACCESS_KEY:-pulseadmin}
+      RUSTFS_SECRET_KEY: ${PULSE_S3_SECRET_KEY:-pulseadmin-secret}
+      RUSTFS_CONSOLE_ENABLE: "true"
     ports:
-      - "8080:8080"
-    command: bash -c "airflow db migrate && airflow users create --username admin --firstname admin --lastname admin --role Admin --email admin@admin.com --password admin && airflow webserver & airflow scheduler"
+      - "9000:9000"     # S3 API
+      - "9001:9001"     # Web console
+    volumes:
+      - objectstore_data:/data
 
 volumes:
-  postgres_data:
-
+  redpanda_data:
+  objectstore_data:
