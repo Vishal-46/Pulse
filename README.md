@@ -54,17 +54,3 @@ quality:   16/16 PASS
 | SBIN.NS | Financials | +22.1% | 22.0% | -23.5% |
 | ICICIBANK.NS | Financials | +18.3% | 18.9% | -19.0% |
 | INFY.NS | Information Technology | -28.8% | 28.8% | -50.7% |
-
-## Documentation
-**[docs/GUIDE.md](docs/GUIDE.md)** is the complete guide: architecture, every concept and design
-decision, a code walkthrough per layer, all commands, Spark performance notes, testing, real bugs
-and their fixes, interview prep, and next steps.
-
-## Project history
-`v1-legacy` (git tag) is the original prototype. Pulse 2.0 is a full rebuild after auditing it:
-v1's consumer had no consumer group (re-read the same messages forever), swallowed write errors,
-and listed tools that were never used.
-
-## Next steps
-Airflow orchestration · Azure ADLS Gen2 storage (`abfss://`, service principal + RBAC) ·
-Delta Lake for MERGE/time travel · adjusted prices · NSE holiday calendar. See GUIDE §13.
