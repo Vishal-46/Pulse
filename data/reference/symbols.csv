@@ -1,0 +1,11 @@
+symbol,company,sector,exchange
+RELIANCE.NS,Reliance Industries,Energy,NSE
+TCS.NS,Tata Consultancy Services,Information Technology,NSE
+INFY.NS,Infosys,Information Technology,NSE
+HDFCBANK.NS,HDFC Bank,Financials,NSE
+ICICIBANK.NS,ICICI Bank,Financials,NSE
+SBIN.NS,State Bank of India,Financials,NSE
+BHARTIARTL.NS,Bharti Airtel,Communication Services,NSE
+ITC.NS,ITC,Consumer Staples,NSE
+HINDUNILVR.NS,Hindustan Unilever,Consumer Staples,NSE
+LT.NS,Larsen & Toubro,Industrials,NSE
